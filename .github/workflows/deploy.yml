@@ -51,6 +51,20 @@ jobs:
       - name: Configurar Pages
         uses: actions/configure-pages@v5
 
+      - name: Validar capas do catalogo antes de publicar
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          config = json.loads(Path('config/app-config.json').read_text(encoding='utf-8'))
+          catalogo = json.loads(Path(config['catalogoUrl']).read_text(encoding='utf-8'))
+          capas = [Path(config['pastaCapas']) / jogo['capa'] for jogo in catalogo['jogos']]
+          ausentes = [str(capa) for capa in capas if not capa.is_file()]
+          if ausentes:
+              raise SystemExit('VALIDACAO_BLOQUEADA: capas ausentes: ' + ', '.join(ausentes))
+          print(f'VALIDACAO_OK: {len(capas)} capas existentes na versao {config["versao"]}')
+          PY
+
       - name: Empacotar o site
         uses: actions/upload-pages-artifact@v3
         with:
